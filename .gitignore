@@ -1,2 +1,10 @@
 *.wasm
 *.abi
+
+.DS_store
+.idea/*
+
+test/*.zip
+test/*.sh
+test/*.pgn
+
