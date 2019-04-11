@@ -1,0 +1,2 @@
+pkill nodeos
+rm -rf ~/Library/Application\ Support/eosio/nodeos/data/*
