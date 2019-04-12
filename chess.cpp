@@ -1,10 +1,9 @@
-
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/print.hpp>
 #include <eosiolib/multi_index.hpp>
 
 /* *
- * The game table array 'player_pieces' contains the 
+ * The game table array 'piece_positions' contains the 
  * locations of each piece on the board, according to the following reference
  *
  * Board Location Reference
@@ -43,39 +42,34 @@
  *  Example 1) the starting space of the white king will be space 5, so player_pieces[0] == 5 at the start of the game.
  *
  *  Example 2) Black wants to move their left knight from its starting space to space 43.  They will call move as follows-
- *  cleos push action chess move '["black_player_account", "game_id_number", "20", "43"]'
+ *  cleos push action chess move '["black_player_account", "game_id_number", "20", "43", "0"]' -p black_player_account@active
  *
  * Castling - 
  *  the castle variable is used to track if the kings and rooks have been moved, according to the following masks-
- *   0x01 - white king cannot castle right
- *   0x02 - white king cannot castle left
- *   0x04 - black king cannot castle right
- *   0x08 - black king cannot castle left
+ *   0x01 - white king cannot castle queen side
+ *   0x02 - white king cannot castle king side
+ *   0x04 - black king cannot castle queen side
+ *   0x08 - black king cannot castle king side
  *
  * En Passant - 
- *  En Passant is a rule to do with moving pawns.  When one player moves a pawn two spaces forward, then their enemy can, on their next move only, use one of their pawns to capture that
+ *  En Passant is a rule to do with moving pawns.  When one player moves a pawn two spaces forward, their opponent can -on their next move only- use one of their pawns to capture that
  *  piece even if it is directly to the left or right of it.  The en_passant variable will track the index of any pawn that was moved 2 spaces forward for one turn.
  *
  * Pawn Promotion -
- *  two variables are used to track pawn promotion.  The pawn_promotion variable is a bitmask where each bit represents one of the pawns on the board.  If the bit is set, that means the pawn was promoted.
+ *  two variables are used to track pawn promotion.  The promoted_pawns variable is a 16 bit bitmask where each bit represents one of the pawns on the board.  If the bit is set, that means the pawn was promoted.
  *   white pawns - 0x01 << (pawn_index - 8)
  *   black pawns - 0x01 << (pawn_index - 16)
  *
- *  the second variable is twice as big, and uses the same relative positioning as pawn_promotion, but uses two bits to represent each pawn, and indicates the piece it's been promoted to.
- *  These values are also used in the 'move' function to specify which unit to promote a pawn to.  The value will be ignored if a pawn is not being promoted, so specify any value
- *  (eos does not support overloading action signatures, or default parameters, and I don't want to use two separate actions for promotion, so the compromise is to have an extra parameter that is rarely ever used.)
- *   0x00 - queen
- *   0x01 - bishop
- *   0x02 - knight
- *   0x03 - rook
+ *  promoted_pawn_types is a 32 bit value, and uses the same relative positioning as pawn_promotion, but uses two bits to represent the type of piece a pawn has been promoted to
+ *  These values are passed into the 'promotion_type' argument of the 'move' action when moving a pawn to the promotion rank.  The value will be ignored if a pawn is not being promoted, but must always be specified (use any value).
+ *    0 = bishop : 1 = knight : 2 = rook : 3 = queen
  *
- *  so for example, if I move the black pawn at index 26 to the final white rank, and promote it to a queen, the following 
  * */
 
-#define W_CAS_R 0x01
-#define W_CAS_L 0x02
-#define B_CAS_R 0x04
-#define B_CAS_L 0x08
+#define W_CAS_Q 0x01
+#define W_CAS_K 0x02
+#define B_CAS_Q 0x04
+#define B_CAS_K 0x08
 
 #define PROMOTED_BISHOP 0x00
 #define PROMOTED_KNIGHT 0x01
@@ -109,7 +103,7 @@ class [[eosio::contract("chess")]] chess : public contract {
 
 		[[eosio::action]]
 		void concede (
-      name& player, 
+      name& player,
       uint64_t& game_id
     ) {
       //player must provide credentials to concede
@@ -335,7 +329,6 @@ class [[eosio::contract("chess")]] chess : public contract {
 		}
 
   private:
-
 		/* *
 		 * valid_move
 		 *  checks the following-
@@ -384,8 +377,8 @@ class [[eosio::contract("chess")]] chess : public contract {
           if (!valid_king_move(current_position, new_position, castle, piece_positions, is_whites_move, captured_piece_index)) {
             //check castling special case
             if (
-              (((castle & W_CAS_L) == 0) && current_position == 4 && new_position == 2) ||
-              (((castle & W_CAS_R) == 0) && current_position == 4 && new_position == 6)
+              (((castle & W_CAS_K) == 0) && current_position == 4 && new_position == 2) ||
+              (((castle & W_CAS_Q) == 0) && current_position == 4 && new_position == 6)
             ) {
               //check that the path is unblocked
               uint8_t rook_index = is_whites_move ? (new_position == 2 ? 6 : 7) : (new_position == 58 ? 22 : 23);
@@ -413,7 +406,7 @@ class [[eosio::contract("chess")]] chess : public contract {
             }
           }
           //king move was valid, so disable castling
-          castle = castle | W_CAS_L | W_CAS_R;
+          castle = castle | W_CAS_K | W_CAS_Q;
 					break;
 				case 1 : //white queen
           if (!valid_queen_move(current_position, new_position, piece_positions, is_whites_move, captured_piece_index)) {
@@ -430,17 +423,17 @@ class [[eosio::contract("chess")]] chess : public contract {
             return false;
           }
 					break;
-				case 6 : //white rook, left
+				case 6 : //white rook, king side
           if (!valid_rook_move(current_position, new_position, piece_positions, is_whites_move, captured_piece_index)) {
             return false;
           } else {
-            castle = castle | W_CAS_L;
+            castle = castle | W_CAS_K;
           }
-        case 7 : //white rook, right
+        case 7 : //white rook, queen side
           if (!valid_rook_move(current_position, new_position, piece_positions, is_whites_move, captured_piece_index)) {
             return false;
           } else {
-            castle = castle | W_CAS_R;
+            castle = castle | W_CAS_Q;
           }
 					break;
 				case 8 ... 15 : //white pawn
@@ -455,8 +448,8 @@ class [[eosio::contract("chess")]] chess : public contract {
           if (!valid_king_move(current_position, new_position, castle, piece_positions, is_whites_move, captured_piece_index)) {
             //check castling special case
             if (
-              (((castle & B_CAS_L) == 0) && current_position == 60 && new_position == 58) ||
-              (((castle & B_CAS_R) == 0) && current_position == 60 && new_position == 62)
+              (((castle & B_CAS_K) == 0) && current_position == 60 && new_position == 58) ||
+              (((castle & B_CAS_Q) == 0) && current_position == 60 && new_position == 62)
             ) {
               //check that the path is unblocked
               uint8_t rook_index = is_whites_move ? (new_position == 2 ? 6 : 7) : (new_position == 58 ? 22 : 23);
@@ -483,7 +476,7 @@ class [[eosio::contract("chess")]] chess : public contract {
             }
           }
           //king move was valid, so disable castling
-          castle = castle | B_CAS_L | B_CAS_R;
+          castle = castle | B_CAS_K | B_CAS_Q;
           break;
 				case 17 : //black queen
           if (!valid_queen_move(current_position, new_position, piece_positions, is_whites_move, captured_piece_index)) {
@@ -500,18 +493,18 @@ class [[eosio::contract("chess")]] chess : public contract {
             return false;
           }
 					break;
-				case 22 : //black rook, left
+				case 22 : //black rook, king side
           if (!valid_rook_move(current_position, new_position, piece_positions, is_whites_move, captured_piece_index)) {
             return false;
           } else {
-            castle = castle | B_CAS_L;
+            castle = castle | B_CAS_K;
           }
 					break;
-        case 23 : //black rook, right
+        case 23 : //black rook, queen side
           if (!valid_rook_move(current_position, new_position, piece_positions, is_whites_move, captured_piece_index)) {
             return false;
           } else {
-            castle = castle | B_CAS_R;
+            castle = castle | B_CAS_Q;
           }
           break;
 				case 24 ... 31 : //black pawn
