@@ -31,7 +31,8 @@ The data structure (multi index) storing the games is the `struct game` class in
 
 The main concept here is that there is a `piece_positions` array, where each index represents a specific piece on the board, and the value represents a board position as follows -
 
-```Board Positions
+```
+Board Positions
 64 63 62 61 60 59 58 57   - Black Ranks
 56 55 54 53 52 51 50 49
 48 47 46 45 44 43 42 41
@@ -42,7 +43,8 @@ The main concept here is that there is a `piece_positions` array, where each ind
  8  7  6  5  4  3  2  1   - White Ranks
 ```
 
-```Piece Indexes
+```
+Piece Indexes
 White
 0     : King
 1     : Queen
