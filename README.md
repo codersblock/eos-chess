@@ -83,9 +83,9 @@ move - Used by one of the players to specify a move.  Parameters are, in order:
 #### Testing
 to facilitate testing, I've included two python scripts.
 
-`test_games/parse_pgn.py` - this is used to convert a PGN file (a common way of (annotating a chess game)[https://en.wikipedia.org/wiki/Portable_Game_Notation]) into a list of move actions.  will take in a pgn file, and create a second file called `{filename}.sh`, which can be run after the contract is set up (contans a list of cleos commands)
+`test_games/parse_pgn.py` - this is used to convert a PGN file (a common way of [annotating a chess game](https://en.wikipedia.org/wiki/Portable_Game_Notation)) into a list of move actions.  will take in a pgn file, and create a second file called `{filename}.sh`, which can be run after the contract is set up (contans a list of cleos commands)
 
-`test_games/gen_fenurl.py` - this script will require 'requests' package to be installed, as it interfaces with the eos RPC API to grab the current game state.  It takes a game ID as an argument, and returns a URL to (lichess)[https://lichess.org/editor], a website that provides a visualization of a (FEN String)[https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation]
+`test_games/gen_fenurl.py` - this script will require 'requests' package to be installed, as it interfaces with the eos RPC API to grab the current game state.  It takes a game ID as an argument, and returns a URL to [lichess](https://lichess.org/editor), a website that provides a visualization of a [FEN String](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation)
 
 
 
