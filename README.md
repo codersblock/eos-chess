@@ -1,8 +1,8 @@
-+++ EOS Chess Contract
+### EOS Chess Contract
 
 This project is a way to for two EOS account holders to play a game of chess, using the EOS blockchain as the moderator.
 
-++++ Setup
+#### Setup
 
 So far, I've only got this set up for local development (meaning, I've not tried deploying it, even to a test net).  To get started, first you will need to install the eos development environment -
 
@@ -14,7 +14,7 @@ If you are new, I'd highly recommend reading through all of the guides in that l
 `nodeos_stop` - shell script that shuts down the locally running nodeos process, and resets any blocks it's created (this only works on macOS)
 `setup.sh` - shell script that creates a lot of test accounts, and sets the chess contract to the chess account
 
-++++ Startup
+#### Startup
 ```eosio-cpp -o chess.wasm chess.cpp --abigen
 ./nodeos_start
 cleos wallet unlock
@@ -22,7 +22,7 @@ cleos wallet unlock
 ```
 this sequence of commands should build the chess contract, get a local test node running, and set the chess contract on the local node to the 'chess' account
 
-++++ Games Table
+#### Games Table
 The data structure (multi index) storing the games is the `struct game` class in `chess.cpp`, and is named `games` on the blockchain.  Once a new game has been created, you can view the records in this table with the following command -
 ```cleos get table chess chess games```
 
@@ -57,7 +57,7 @@ Black
 24-31 : Pawn
 ```
 
-++++ Actions
+#### Actions
 newgame - Set up a new game.  Parameters are the white player and the black player account names, respsectively.
 ```cleos push action chess newgame '["alice", "bob"]' -p chess@active```
 
@@ -77,7 +77,7 @@ move - Used by one of the players to specify a move.  Parameters are, in order:
 - promotion type - used when promoting pawns, ignored otherwise.  Values are: 0=bishop, 1=knight, 2=rook, 3=queen
 ```cleos push action chess move '["alice", "0", "12", "29", "0"]' -p alice@active```
 
-++++ Testing
+#### Testing
 to facilitate testing, I've included two python scripts.
 
 `test_games/parse_pgn.py` - this is used to convert a PGN file (a common way of (annotating a chess game)[https://en.wikipedia.org/wiki/Portable_Game_Notation]) into a list of move actions.  will take in a pgn file, and create a second file called `{filename}.sh`, which can be run after the contract is set up (contans a list of cleos commands)
