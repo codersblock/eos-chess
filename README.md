@@ -17,7 +17,8 @@ If you are new, I'd highly recommend reading through all of the guides in that l
 `setup.sh` - shell script that creates a lot of test accounts, and sets the chess contract to the chess account
 
 #### Startup
-```eosio-cpp -o chess.wasm chess.cpp --abigen
+```
+eosio-cpp -o chess.wasm chess.cpp --abigen
 ./nodeos_start
 cleos wallet unlock
 ./setup.sh
@@ -27,7 +28,9 @@ this sequence of commands should build the chess contract, get a local test node
 
 #### Games Table
 The data structure (multi index) storing the games is the `struct game` class in `chess.cpp`, and is named `games` on the blockchain.  Once a new game has been created, you can view the records in this table with the following command -
-```cleos get table chess chess games```
+```
+cleos get table chess chess games
+```
 
 The main concept here is that there is a `piece_positions` array, where each index represents a specific piece on the board, and the value represents a board position as follows -
 
@@ -64,13 +67,18 @@ Black
 
 #### Actions
 newgame - Set up a new game.  Parameters are the white player and the black player account names, respsectively.
-```cleos push action chess newgame '["alice", "bob"]' -p chess@active```
+```
+cleos push action chess newgame '["alice", "bob"]' -p chess@active
+```
 
 concede - Used by a player to concede a game.  In the following example, alice uses the concede action to concede the game with gameid 0.  Obviously, this only works if she's actually a player in that game.
-```cleos push action chess concede '["alice", "0"]' -p alice@active```
+```
+cleos push action chess concede '["alice", "0"]' -p alice@active
+```
 
 draw - Used by both players to declare a draw.  BOTH players must send this command in order for the game to be declared a draw.
-```cleos push action chess draw '["alice", "0"]' -p alice@active
+```
+cleos push action chess draw '["alice", "0"]' -p alice@active
 cleos push action chess draw '["bob", "0"]' -p bob@active
 ```
 
@@ -80,7 +88,9 @@ move - Used by one of the players to specify a move.  Parameters are, in order:
 - piece id - see 'Piece Indexes' above
 - new position - see 'Board Positions' above
 - promotion type - used when promoting pawns, ignored otherwise.  Values are: 0=bishop, 1=knight, 2=rook, 3=queen
-```cleos push action chess move '["alice", "0", "12", "29", "0"]' -p alice@active```
+```
+cleos push action chess move '["alice", "0", "12", "29", "0"]' -p alice@active
+```
 
 #### Testing
 to facilitate testing, I've included two python scripts.
