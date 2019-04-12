@@ -11,7 +11,9 @@ So far, I've only got this set up for local development (meaning, I've not tried
 If you are new, I'd highly recommend reading through all of the guides in that link to familiarize yourself with smart contract development on the EOS platform.  Once you've followed the steps to create a development wallet, you can take a look at the following convenience scripts I've included-
 
 `nodeos_start` - shell script that starts up the nodeos process locally
+
 `nodeos_stop` - shell script that shuts down the locally running nodeos process, and resets any blocks it's created (this only works on macOS)
+
 `setup.sh` - shell script that creates a lot of test accounts, and sets the chess contract to the chess account
 
 #### Startup
@@ -20,6 +22,7 @@ If you are new, I'd highly recommend reading through all of the guides in that l
 cleos wallet unlock
 ./setup.sh
 ```
+
 this sequence of commands should build the chess contract, get a local test node running, and set the chess contract on the local node to the 'chess' account
 
 #### Games Table
