@@ -211,7 +211,7 @@ def get_pawn(pos, boardstate, whites_move, ambiguous, capture) :
         if ambiguous.isdigit() :
           rowmin = (ord(ambiguous) - ord('1')) * 8
           for i in range(8, 16) :
-            if boadstate[i] > rowmin and boardstate[i] <= rowmin + 8 and (boardstate[i] == pos - 7 or boardstate[i] == pos - 9) :
+            if boardstate[i] > rowmin and boardstate[i] <= rowmin + 8 and (boardstate[i] == pos - 7 or boardstate[i] == pos - 9) :
               return i
         else :
           col = 8 - (ord(ambiguous) - ord('a'))
@@ -227,7 +227,7 @@ def get_pawn(pos, boardstate, whites_move, ambiguous, capture) :
         if ambiguous.isdigit() :
           rowmin = (ord(ambiguous) - ord('1')) * 8
           for i in range(24, 32) :
-            if boadstate[i] > rowmin and boardstate[i] <= rowmin + 8 and (boardstate[i] == pos + 7 or boardstate[i] == pos + 9) :
+            if boardstate[i] > rowmin and boardstate[i] <= rowmin + 8 and (boardstate[i] == pos + 7 or boardstate[i] == pos + 9) :
               return i
         else :
           col = 8 - (ord(ambiguous) - ord('a'))
@@ -241,7 +241,7 @@ def get_pawn(pos, boardstate, whites_move, ambiguous, capture) :
   return -1
 
 
-def generate_cleos_command(move, boardstate, turn) :
+def generate_cleos_command(move, boardstate, turn, gameid) :
   whites_move = turn % 2 == 1
   player = ""
   rstr = ""
@@ -334,7 +334,7 @@ def generate_cleos_command(move, boardstate, turn) :
           if not whites_move and piece_pos == pos + 8 :
             boardstate[index] = 0
     boardstate[idx] = pos
-  return (boardstate, "cleos push action chess move \'[\"" + player + "\", \"0\", \"" + str(idx) + "\", \"" + str(pos) + "\", \"" + str(promotion) + "\"]\' -p " + player + "@active\n")
+  return (boardstate, "cleos push action chess move \'[\"" + player + "\", \"" + str(gameid) + "\", \"" + str(idx) + "\", \"" + str(pos) + "\", \"" + str(promotion) + "\"]\' -p " + player + "@active\n")
 
 
 def parse_move(movetext) :
@@ -357,8 +357,9 @@ def parse_move(movetext) :
 
 
 #start main script
-for filename in sys.argv :
-  if filename != "parse_pgn.py" :
+gameid = 0
+for index, filename in enumerate(sys.argv) :
+  if index > 0 :
     pgnfile = open(filename, "r")
     testfile = open(filename + ".sh", "w+")
     gamestring = ""
@@ -372,7 +373,7 @@ for filename in sys.argv :
     nextmove = ""
     moves = []
     while (gsindex < len(gamestring)) :
-      if gamestring[gsindex] != ' ' :
+      if gamestring[gsindex] != ' ' and gamestring[gsindex] != "\n" :
         nextmove += gamestring[gsindex]
       else :
         if nextmove != "" :
@@ -382,13 +383,15 @@ for filename in sys.argv :
     boardstate = [4, 5, 3, 6, 2, 7, 1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 60, 61, 59, 62, 58, 63, 57, 64, 49, 50, 51, 52, 53, 54, 55, 56]
     gsindex = 0
     turn = 1
+    testfile.write("cleos push action chess newgame \'[\"alice\", \"bob\"]\' -p chess@active\n")
     for move in moves :
-      if move.find('.') >= 0 :
+      if move.find('.') != -1 :
         move = (move.split('.') [1])
-      if move != "" :
-        print(str(turn) + ":  " + str(boardstate))
-        (boardstate, movestring) = generate_cleos_command(move, boardstate, turn)
+      if move != "" and move != "1/2-1/2" and move != "1-0" and move != "0-1" :
+        (boardstate, movestring) = generate_cleos_command(move, boardstate, turn, gameid)
+        testfile.write
         testfile.write(movestring)
         turn += 1
     pgnfile.close()
     testfile.close()
+    gameid += 1

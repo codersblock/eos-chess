@@ -1,10 +1,13 @@
 *.wasm
 *.abi
+nodeos.log
 
 .DS_store
-.idea/*
+*.idea
 
-test/*.zip
-test/*.sh
-test/*.pgn
+test_games/*.zip
+test_games/*.sh
+test_games/*.pgn
 
+Pipfile
+*.lock
