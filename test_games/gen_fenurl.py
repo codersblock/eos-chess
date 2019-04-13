@@ -24,9 +24,10 @@ board = [['x' for x in range(8)] for y in range(8)]
 positions = game["piece_positions"]
 
 def add_to_board(board, piece, pos) :
-  row = (pos - 1) // 8
-  col = 7 - ((pos - 1) % 8)
-  board[row][col] = piece
+  if (pos > 0) :
+    row = 7 - ((pos - 1) // 8)
+    col = 7 - ((pos - 1) % 8)
+    board[row][col] = piece
   return board
 
 #white pieces
