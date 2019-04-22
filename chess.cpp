@@ -80,6 +80,9 @@ using namespace eosio;
 
 class [[eosio::contract("chess")]] chess : public contract {
 
+  /***************************************
+   * Public Contract Action Specifications
+   ***************************************/
 	public:
 		using contract::contract;
 
@@ -326,22 +329,26 @@ class [[eosio::contract("chess")]] chess : public contract {
 				print("Unable to find a game with ID ", game_id);
 				return;
 			}
-		}
+    }
 
+  /***************************************
+   * Private Helper Functions
+   ***************************************/
   private:
-		/* *
-		 * valid_move
-		 *  checks the following-
-		 *  - is this piece alive?
-		 *  - is the path to the new position valid and unblocked?
-		 *  - does this move leave player's king unchecked?
+
+    /* *
+     * valid_move
+     *  checks the following-
+     *  - is this piece alive?
+     *  - is the path to the new position valid and unblocked?
+     *  - does this move leave player's king unchecked?
      *  - was any piece captured? - if so, update captured_piece_index
      *  - are we castling? - if so, update castle
      *  - was a pawn moved two spaces from it's start? - if so, update en_passant_idx, if not, reset en_passant_idx
      *  - was a pawn promoted? - if so, update promoted_pawns and promoted_pawn_index
      *  - does this move lead to checkmate?
      *  - TODO: does this move lead to stalemate / draw?
-		 * */
+     * */		
 		bool valid_move (
 			uint8_t piece_id, 
 			uint8_t new_position, 
@@ -531,6 +538,133 @@ class [[eosio::contract("chess")]] chess : public contract {
 
       //figure out if the enemy king is in checkmate
       checkmate = in_checkmate(!is_whites_move, new_piece_positions, promoted_pawns, promoted_pawn_types);
+
+      return true;
+    }
+
+    /* *
+     * returns true if the position specified is checked by the opposing color.
+     *  @param is_white_piece - specifies the color of the current player ex) is_white_piece == true means to check if any black pieces are checking position
+     *  @param piece_positions - vector of all piece positions
+     *  @param promoted_pawns - bit vector specifying which pawns are promoted
+     *  @param promoted_pawn_type - specifies what type of piece a pawn has been promoted to
+     * */
+    bool in_check (
+      bool is_whites_move,
+      const std::vector<uint8_t>& piece_positions,
+			uint16_t promoted_pawns,
+			uint32_t promoted_pawn_types
+    ) {
+      //find out which enemy pieces are threatening the king
+      uint8_t throwaway = 0; //validity functions return the index of any enemy piece in the target 'position', but we don't care about that here so we use this throwaway variable as a placeholder
+      uint8_t position = is_whites_move ? piece_positions[0] : piece_positions[16]; //position of the king we are checking
+
+      //check enemy king - no possibility of another piece being in between, so we can just check if the enemy king is next to this space
+      uint8_t enemy_king_pos = is_whites_move ? piece_positions[16] : piece_positions[0];
+      if (valid_king_move(enemy_king_pos, position, 0xFF, piece_positions, is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_queen_pos = is_whites_move ? piece_positions[17] : piece_positions[1];
+      if (valid_queen_move(enemy_queen_pos, position, piece_positions, !is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_bishop1_pos = is_whites_move ? piece_positions[18] : piece_positions[2];
+      if (valid_bishop_move(enemy_bishop1_pos, position, piece_positions, !is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_bishop2_pos = is_whites_move ? piece_positions[19] : piece_positions[3];
+      if (valid_bishop_move(enemy_bishop2_pos, position, piece_positions, !is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_knight1_pos = is_whites_move ? piece_positions[20] : piece_positions[4];
+      if (valid_knight_move(enemy_knight1_pos, position, piece_positions, !is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_knight2_pos = is_whites_move ? piece_positions[21] : piece_positions[5];
+      if (valid_knight_move(enemy_knight2_pos, position, piece_positions, !is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_rook1_pos = is_whites_move ? piece_positions[22] : piece_positions[6];
+      if (valid_rook_move(enemy_rook1_pos, position, piece_positions, !is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_rook2_pos = is_whites_move ? piece_positions[23] : piece_positions[7];
+      if (valid_rook_move(enemy_rook2_pos, position, piece_positions, !is_whites_move, throwaway)) {
+        return true;
+      }
+
+      uint8_t enemy_pawn_index_offset = is_whites_move ? 24 : 8;
+      for (uint8_t index = 0; index < 8; ++index) {
+        uint8_t enemy_pawn_index = index + enemy_pawn_index_offset;
+        uint8_t ep_invalid = 32; //can't check a space using en passant, so pass in the invalid index to the pawn validation function
+        if (valid_pawn_move(enemy_pawn_index, position, piece_positions, !is_whites_move, throwaway, promoted_pawns, promoted_pawn_types, ep_invalid)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    bool in_checkmate (
+      bool check_white,
+      const std::vector<uint8_t> piece_positions,
+			uint16_t promoted_pawns,
+			uint32_t promoted_pawn_types
+    ) {
+      uint8_t king_pos = check_white ? piece_positions[0] : piece_positions[16];
+      //TODO: use 'throwaway' to update new_piece_positions if a piece is captured
+      uint8_t throwaway = 32;
+      std::vector<uint8_t> new_piece_positions (piece_positions);
+
+      //first, check if the king can move 1 space in any direction
+      new_piece_positions[king_pos] = piece_positions[king_pos] + 1;
+      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+        if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
+          return false;
+        }
+      }
+
+      new_piece_positions[king_pos] = piece_positions[king_pos] - 1;
+      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+        if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
+          return false;
+        }
+      }
+
+      for (int offset = -9; offset < -6; ++offset) {
+        uint8_t king_pos = check_white ? 0 : 16;
+        new_piece_positions[king_pos] = piece_positions[king_pos] + offset;
+        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+          if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
+            return false;
+          }
+        }
+      }
+
+      for (int offset = 7; offset < 10; ++offset) {
+        uint8_t king_pos = check_white ? 0 : 16;
+        new_piece_positions[king_pos] = piece_positions[king_pos] + offset;
+        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+          if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
+            return false;
+          }
+        }
+      }
+
+      //TODO: look for any pieces that threaten the king's current position.  If any exist, see if they are capturable in one move, or if they can be blocked by a non-king move.
+      //if all valid king moves are checked, see if the current position is checked
+      if (!in_check(check_white, piece_positions, promoted_pawns, promoted_pawn_types)) {
+        return false;
+      } else {
+
+      }
 
       return true;
     }
@@ -925,128 +1059,6 @@ class [[eosio::contract("chess")]] chess : public contract {
 
       promoted_pawns = (promoted_pawns | (0x01 << offset));
       promoted_pawn_types = (promoted_pawn_types | ((promoted_pawn_type & 0x03) << (offset * 2)));
-    }
-
-    /* *
-     * returns true if the position specified is checked by the opposing color.
-     *  @param position - specifies the position to check
-     *  @param is_white_piece - specifies the color of the current player ex) is_white_piece == true means to check if any black pieces are checking position
-     *  @param piece_positions - vector of all piece positions
-     *  @param promoted_pawns - bit vector specifying which pawns are promoted
-     *  @param promoted_pawn_type - specifies what type of piece a pawn has been promoted to
-     * */
-    bool in_check (
-      bool is_whites_move,
-      const std::vector<uint8_t>& piece_positions,
-			uint16_t promoted_pawns,
-			uint32_t promoted_pawn_types
-    ) {
-      //find out which enemy pieces are threatening the king
-      uint8_t throwaway = 0; //validity functions return the index of any enemy piece in the target 'position', but we don't care about that here so we use this throwaway variable as a placeholder
-      uint8_t position = is_whites_move ? piece_positions[0] : piece_positions[16]; //position of the king we are checking
-
-      //check enemy king - no possibility of another piece being in between, so we can just check if the enemy king is next to this space
-      uint8_t enemy_king_pos = is_whites_move ? piece_positions[16] : piece_positions[0];
-      if (valid_king_move(enemy_king_pos, position, 0xFF, piece_positions, is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_queen_pos = is_whites_move ? piece_positions[17] : piece_positions[1];
-      if (valid_queen_move(enemy_queen_pos, position, piece_positions, !is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_bishop1_pos = is_whites_move ? piece_positions[18] : piece_positions[2];
-      if (valid_bishop_move(enemy_bishop1_pos, position, piece_positions, !is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_bishop2_pos = is_whites_move ? piece_positions[19] : piece_positions[3];
-      if (valid_bishop_move(enemy_bishop2_pos, position, piece_positions, !is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_knight1_pos = is_whites_move ? piece_positions[20] : piece_positions[4];
-      if (valid_knight_move(enemy_knight1_pos, position, piece_positions, !is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_knight2_pos = is_whites_move ? piece_positions[21] : piece_positions[5];
-      if (valid_knight_move(enemy_knight2_pos, position, piece_positions, !is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_rook1_pos = is_whites_move ? piece_positions[22] : piece_positions[6];
-      if (valid_rook_move(enemy_rook1_pos, position, piece_positions, !is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_rook2_pos = is_whites_move ? piece_positions[23] : piece_positions[7];
-      if (valid_rook_move(enemy_rook2_pos, position, piece_positions, !is_whites_move, throwaway)) {
-        return true;
-      }
-
-      uint8_t enemy_pawn_index_offset = is_whites_move ? 24 : 8;
-      for (uint8_t index = 0; index < 8; ++index) {
-        uint8_t enemy_pawn_index = index + enemy_pawn_index_offset;
-        uint8_t ep_invalid = 32; //can't check a space using en passant, so pass in the invalid index to the pawn validation function
-        if (valid_pawn_move(enemy_pawn_index, position, piece_positions, !is_whites_move, throwaway, promoted_pawns, promoted_pawn_types, ep_invalid)) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-    bool in_checkmate (
-      bool check_white,
-      const std::vector<uint8_t> piece_positions,
-			uint16_t promoted_pawns,
-			uint32_t promoted_pawn_types
-    ) {
-      uint8_t king_pos = check_white ? piece_positions[0] : piece_positions[16];
-      uint8_t throwaway = 0;
-      std::vector<uint8_t> new_piece_positions (piece_positions);
-
-      new_piece_positions[king_pos] = piece_positions[king_pos] + 1;
-      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
-        if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
-          return false;
-        }
-      }
-
-      new_piece_positions[king_pos] = piece_positions[king_pos] - 1;
-      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
-        if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
-          return false;
-        }
-      }
-
-      for (int offset = -9; offset < -6; ++offset) {
-        uint8_t king_pos = check_white ? 0 : 16;
-        new_piece_positions[king_pos] = piece_positions[king_pos] + offset;
-        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
-          if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
-            return false;
-          }
-        }
-      }
-
-      for (int offset = 7; offset < 10; ++offset) {
-        uint8_t king_pos = check_white ? 0 : 16;
-        new_piece_positions[king_pos] = piece_positions[king_pos] + offset;
-        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
-          if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
-            return false;
-          }
-        }
-      }
-
-      if (!in_check(check_white, piece_positions, promoted_pawns, promoted_pawn_types)) {
-        return false;
-      }
-
-      return true;
     }
 
     /* *
