@@ -4,17 +4,27 @@ This project is a way to for two EOS account holders to play a game of chess, us
 
 #### Setup
 
-So far, I've only got this set up for local development (meaning, I've not tried deploying it, even to a test net).  To get started, first you will need to install the eos development environment -
+eosio install instructions
+https://developers.eos.io/eosio-home/docs/setting-up-your-environment
 
-[eosio](https://developers.eos.io/eosio-home/docs/getting-the-software)
+CDT (contract development toolkit) installation
+https://developers.eos.io/eosio-home/docs/installing-the-contract-development-toolkit
 
-If you are new, I'd highly recommend reading through all of the guides in that link to familiarize yourself with smart contract development on the EOS platform.  Once you've followed the steps to create a development wallet, you can take a look at the following convenience scripts I've included-
+Create dev wallet
+https://developers.eos.io/eosio-home/docs/wallets
 
-`nodeos_start` - shell script that starts up the nodeos process locally
+NOTE: you will want to store the auto-generated dev wallet password in a place that's easily accessible.  
 
-`nodeos_stop` - shell script that shuts down the locally running nodeos process, and resets any blocks it's created (this only works on macOS)
+Build the contract-
+```
+eosio-cpp -o chess.wasm chess.cpp --abigen
+```
 
-`setup.sh` - shell script that creates a lot of test accounts, and sets the chess contract to the chess account
+In `setup.sh`, replace the public keys in the account creation commands with the public key you generated with the `cleos wallet create_key` command in the wallets section.
+Then run `./nodeos_start` and `./setup.sh`.  (if setup still gives you errors, be sure your wallet is still unlocked as described in the 'Create dev wallet' section)
+
+The setup script creates some test accounts, including one called 'chess'.  It then sets the contract to the chess account, allowing you to call contract actions against that account, as in the examples in the 'Actions' section below.
+
 
 #### Startup
 ```
