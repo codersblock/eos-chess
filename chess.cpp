@@ -524,12 +524,13 @@ class [[eosio::contract("chess")]] chess : public contract {
         new_piece_positions[captured_piece_index] = 0;
       }
 
+      //can't make a move that leaves our king in check
       if (in_check(is_whites_move, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
         return false;
       }
 
       //figure out if the enemy king is in checkmate
-      checkmate = in_checkmate(!is_whites_move, piece_positions, promoted_pawns, promoted_pawn_types);
+      checkmate = in_checkmate(!is_whites_move, new_piece_positions, promoted_pawns, promoted_pawn_types);
 
       return true;
     }
@@ -558,7 +559,6 @@ class [[eosio::contract("chess")]] chess : public contract {
 			{
 				return false;
 			}
-
 
       //search through other pieces to see if one of them has been captured, or if a friendly piece is blocking this move
       for (int index = 0; index < 32; ++index) {
@@ -952,37 +952,37 @@ class [[eosio::contract("chess")]] chess : public contract {
       }
 
       uint8_t enemy_queen_pos = is_whites_move ? piece_positions[17] : piece_positions[1];
-      if (valid_queen_move(enemy_queen_pos, position, piece_positions, is_whites_move, throwaway)) {
+      if (valid_queen_move(enemy_queen_pos, position, piece_positions, !is_whites_move, throwaway)) {
         return true;
       }
 
       uint8_t enemy_bishop1_pos = is_whites_move ? piece_positions[18] : piece_positions[2];
-      if (valid_bishop_move(enemy_bishop1_pos, position, piece_positions, is_whites_move, throwaway)) {
+      if (valid_bishop_move(enemy_bishop1_pos, position, piece_positions, !is_whites_move, throwaway)) {
         return true;
       }
 
       uint8_t enemy_bishop2_pos = is_whites_move ? piece_positions[19] : piece_positions[3];
-      if (valid_bishop_move(enemy_bishop2_pos, position, piece_positions, is_whites_move, throwaway)) {
+      if (valid_bishop_move(enemy_bishop2_pos, position, piece_positions, !is_whites_move, throwaway)) {
         return true;
       }
 
       uint8_t enemy_knight1_pos = is_whites_move ? piece_positions[20] : piece_positions[4];
-      if (valid_knight_move(enemy_knight1_pos, position, piece_positions, is_whites_move, throwaway)) {
+      if (valid_knight_move(enemy_knight1_pos, position, piece_positions, !is_whites_move, throwaway)) {
         return true;
       }
 
       uint8_t enemy_knight2_pos = is_whites_move ? piece_positions[21] : piece_positions[5];
-      if (valid_knight_move(enemy_knight2_pos, position, piece_positions, is_whites_move, throwaway)) {
+      if (valid_knight_move(enemy_knight2_pos, position, piece_positions, !is_whites_move, throwaway)) {
         return true;
       }
 
       uint8_t enemy_rook1_pos = is_whites_move ? piece_positions[22] : piece_positions[6];
-      if (valid_rook_move(enemy_rook1_pos, position, piece_positions, is_whites_move, throwaway)) {
+      if (valid_rook_move(enemy_rook1_pos, position, piece_positions, !is_whites_move, throwaway)) {
         return true;
       }
 
       uint8_t enemy_rook2_pos = is_whites_move ? piece_positions[23] : piece_positions[7];
-      if (valid_rook_move(enemy_rook2_pos, position, piece_positions, is_whites_move, throwaway)) {
+      if (valid_rook_move(enemy_rook2_pos, position, piece_positions, !is_whites_move, throwaway)) {
         return true;
       }
 
@@ -990,7 +990,7 @@ class [[eosio::contract("chess")]] chess : public contract {
       for (uint8_t index = 0; index < 8; ++index) {
         uint8_t enemy_pawn_index = index + enemy_pawn_index_offset;
         uint8_t ep_invalid = 32; //can't check a space using en passant, so pass in the invalid index to the pawn validation function
-        if (valid_pawn_move(enemy_pawn_index, position, piece_positions, is_whites_move, throwaway, promoted_pawns, promoted_pawn_types, ep_invalid)) {
+        if (valid_pawn_move(enemy_pawn_index, position, piece_positions, !is_whites_move, throwaway, promoted_pawns, promoted_pawn_types, ep_invalid)) {
           return true;
         }
       }

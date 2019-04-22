@@ -11,3 +11,5 @@ test_games/*.pgn
 
 Pipfile
 *.lock
+
+setup.sh
