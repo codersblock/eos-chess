@@ -619,31 +619,58 @@ class [[eosio::contract("chess")]] chess : public contract {
 			uint32_t promoted_pawn_types
     ) {
       uint8_t king_pos = check_white ? piece_positions[0] : piece_positions[16];
-      //TODO: use 'throwaway' to update new_piece_positions if a piece is captured
-      uint8_t throwaway = 32;
+      uint8_t captured_idx = 32;
       std::vector<uint8_t> new_piece_positions (piece_positions);
 
       //first, check if the king can move 1 space in any direction
       new_piece_positions[king_pos] = piece_positions[king_pos] + 1;
-      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, captured_idx)) {
+        //remove any captured piece in the new positions array
+        if (captured_idx < 32) {
+          new_piece_positions[captured_idx] = 0;
+        }
         if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
           return false;
         }
+        //reset any captured piece to its initial position
+        if (captured_idx < 32) {
+          new_piece_positions[captured_idx] = piece_positions[captured_idx];
+          captured_idx = 32;
+        }
+
       }
 
       new_piece_positions[king_pos] = piece_positions[king_pos] - 1;
-      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+      if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, captured_idx)) {
+        //remove any captured piece in the new positions array
+        if (captured_idx < 32) {
+          new_piece_positions[captured_idx] = 0;
+        }
         if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
           return false;
+        }
+        //reset any captured piece to its initial position
+        if (captured_idx < 32) {
+          new_piece_positions[captured_idx] = piece_positions[captured_idx];
+          captured_idx = 32;
         }
       }
 
       for (int offset = -9; offset < -6; ++offset) {
         uint8_t king_pos = check_white ? 0 : 16;
         new_piece_positions[king_pos] = piece_positions[king_pos] + offset;
-        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, captured_idx)) {
+          //remove any captured piece in the new positions array
+          if (captured_idx < 32) {
+            new_piece_positions[captured_idx] = 0;
+          }
           if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
             return false;
+          }
+          //reset any captured piece to its initial position
+          if (captured_idx < 32) {
+            new_piece_positions[captured_idx] = piece_positions[captured_idx];
+            captured_idx = 32;
           }
         }
       }
@@ -651,9 +678,18 @@ class [[eosio::contract("chess")]] chess : public contract {
       for (int offset = 7; offset < 10; ++offset) {
         uint8_t king_pos = check_white ? 0 : 16;
         new_piece_positions[king_pos] = piece_positions[king_pos] + offset;
-        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, throwaway)) {
+        if (valid_king_move(piece_positions[king_pos], new_piece_positions[king_pos], 0xFF, piece_positions, check_white, captured_idx)) {
+          //remove any captured piece in the new positions array
+          if (captured_idx < 32) {
+            new_piece_positions[captured_idx] = 0;
+          }
           if (!in_check(check_white, new_piece_positions, promoted_pawns, promoted_pawn_types)) {
             return false;
+          }
+          //reset any captured piece to its initial position
+          if (captured_idx < 32) {
+            new_piece_positions[captured_idx] = piece_positions[captured_idx];
+            captured_idx = 32;
           }
         }
       }
@@ -663,7 +699,6 @@ class [[eosio::contract("chess")]] chess : public contract {
       if (!in_check(check_white, piece_positions, promoted_pawns, promoted_pawn_types)) {
         return false;
       } else {
-
       }
 
       return true;
