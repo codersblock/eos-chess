@@ -4,14 +4,11 @@ This project is a way to for two EOS account holders to play a game of chess, us
 
 #### Setup
 
-eosio install instructions
-https://developers.eos.io/eosio-home/docs/setting-up-your-environment
+[eosio install instructions](https://developers.eos.io/eosio-home/docs/setting-up-your-environment)
 
-CDT (contract development toolkit) installation
-https://developers.eos.io/eosio-home/docs/installing-the-contract-development-toolkit
+[CDT (contract development toolkit) installation](https://developers.eos.io/eosio-home/docs/installing-the-contract-development-toolkit)
 
-Create dev wallet
-https://developers.eos.io/eosio-home/docs/wallets
+[Create dev wallet](https://developers.eos.io/eosio-home/docs/wallets)
 
 NOTE: you will want to store the auto-generated dev wallet password in a place that's easily accessible.  
 
